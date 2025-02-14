@@ -106,12 +106,20 @@ int main() {
 
     int seconds = 120;
     int corrects = 0;
+
     auto start = std::chrono::steady_clock::now();
     auto end_time = start + std::chrono::seconds(seconds);
 
     while (std::chrono::steady_clock::now() < end_time) {
+    
+        auto now = std::chrono::steady_clock::now();
+        int elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
+        int timeLeft = seconds - elapsedSeconds;
+
         int n1 = getRandomNumber(min1, max1);
         int n2 = getRandomNumber(min2, max2);
+        
+        std::cout << "\nTime left: " << timeLeft << " seconds" << std::endl;
         std::cout << "\n" << n1 << " * " << n2 << " = ";
         std::getline(std::cin, userInput);
         
