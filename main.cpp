@@ -57,18 +57,13 @@ bool checkAnswer(int n1, int n2, int answer) {
     return false;
 }
 
-bool checkDB(const  std::string& filename) {
-    std::ifstream file(filename);
-    return file.good();
-}
-
-bool ensureTable(sqlite3* db) {
+bool ensureScoreTable(sqlite3* db) {
     const char* sql = "CREATE TABLE IF NOT EXISTS scores ("
-    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-    "player_name TEXT NOT NULL, "
-    "score INTEGER NOT NULL, "
-    "scope_pairs TEXT  NOT NULL "
-    "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);";
+                      "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                      "player_name TEXT NOT NULL, "
+                      "score REAL NOT NULL, "
+                      "scope_pairs TEXT NOT NULL "
+                      "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);";
 
     char* errorMessage = nullptr;
     int exitCode = sqlite3_exec(db, sql, nullptr, nullptr, &errorMessage);
@@ -80,12 +75,70 @@ bool ensureTable(sqlite3* db) {
     return true;
 }
 
+bool dbAddResults(
+    sqlite3* db,
+    const std::string& playerName,
+    const std::ostringstream& scopePairs,
+    double minuteScore
+) {
+    // do stuff
+    const char* sql = "INSERT INTO scores (player_name, scopePairs, score) VALUES (?, ?, ?);";
+    sqlite3_stmt* stmt;
+
+    if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Preparation failed: " << sqlite3_errmsg(db) << std::endl;
+        return false;
+    }
+
+    if (sqlite3_bind_text(stmt, 1, playerName.c_str(), -1, SQLITE_TRANSIENT) != SQLITE_OK) {
+        std::cerr << "Binding playerName failed: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    if (sqlite3_bind_text(stmt, 2, scopePairs.str().c_str(), -1, SQLITE_TRANSIENT) != SQLITE_OK) {
+        std::cerr << "Binding description failed: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    if (sqlite3_bind_double(stmt, 3, minuteScore) != SQLITE_OK) {
+        std::cerr << "Binding score failed: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::cerr << "Execution failed: " << sqlite3_errmsg(db) << std::endl;
+        sqlite3_finalize(stmt);
+        return false;
+    }
+
+    sqlite3_finalize(stmt);
+    return true;
+}
+
 int main() {
     std::vector<int> digits1;
     std::vector<int> digits2;
     std::string userInput;
 
-    if checkDB
+    // default/placeholder user name (to be removed/replaced with input)
+    std::string playerName = "Anonomous";
+
+
+    // Ensure DB scores setup
+    std::string dbName = "game_scores.db";
+    sqlite3* db;
+    int exitCode = sqlite3_open(dbName.c_str(), &db);
+    if (exitCode != SQLITE_OK) {
+        std::cerr << "Error opening database:" << sqlite3_errmsg(db) << std::endl;
+    }
+    ensureScoreTable(db);
+    sqlite3_close(db);
+    std::cout << "Database setup complete!\n\n" << std::endl;
+    // DB scores setup done
+
 
     while (digits1.size() < 2) {
         std::cout << "Enter min or max value for interval 1(or type 'exit' to quit): ";
@@ -164,6 +217,35 @@ int main() {
         std::this_thread::sleep_for(std::chrono::seconds(1));  // Wait 1 sec between iterations
     }
     std::cout << "\nYou answered " << corrects << " questions correctly in " << seconds << " seconds!\n";
+
     
+    // Prepare and add to db.
+    double minuteScore = corrects / (seconds / 60.0);
+    std::ostringstream scopePairs;
+    if (min1 > min2) {
+        scopePairs << min1 << "," << max1 << "-" << min2 << ',' << max2;
+    } else if (min2 > min1) {
+        scopePairs << min2 << "," << max2 << "-" << min1 << ',' << max1;
+    } else if (max1 - min1 < max2 - min2) {
+        scopePairs << min1 << "," << max1 << "-" << min2 << ',' << max2;
+    } else if (max2 - min2 < max1 - min1) {
+        scopePairs << min2 << "," << max2 << "-" << min1 << ',' << max1;
+    } else {
+        scopePairs << min1 << "," << max1 << "-" << min2 << ',' << max2;
+    }
+    // open db and write.
+    if (sqlite3_open("game_scores.db", &db)) {
+        std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
+        return 1;
+    }
+    if (dbAddResults(db, playerName, scopePairs, minuteScore)) {
+        std::cout << "New scores successfully saved" << std::endl;
+    } else {
+        std::cerr << "Failed to store new scores" << std::endl;
+    }
+    sqlite3_close(db);
+    // DONE saving scores
+
+
     return 0;
 }
