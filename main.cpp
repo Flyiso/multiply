@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <chrono>
 #include <thread>
+#include <sys/stat.h>
 #include <sqlite3.h>
 
 std::string removeWhitespace(const std::string& input) {
@@ -83,6 +84,8 @@ int main() {
     std::vector<int> digits1;
     std::vector<int> digits2;
     std::string userInput;
+
+    if checkDB
 
     while (digits1.size() < 2) {
         std::cout << "Enter min or max value for interval 1(or type 'exit' to quit): ";
