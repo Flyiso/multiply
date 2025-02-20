@@ -60,9 +60,10 @@ bool checkAnswer(int n1, int n2, int answer) {
 bool ensureScoreTable(sqlite3* db) {
     const char* sql = "CREATE TABLE IF NOT EXISTS scores ("
                       "id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                      "player_name TEXT NOT NULL, "
-                      "score REAL NOT NULL, "
-                      "scope_pairs TEXT NOT NULL "
+                      "playerName TEXT NOT NULL, "
+                      "minuteScore REAL NOT NULL, "
+                      "scopePairs TEXT NOT NULL, "
+                      "percentageCorrect Real NOT NULL, "
                       "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);";
 
     char* errorMessage = nullptr;
@@ -79,10 +80,11 @@ bool dbAddResults(
     sqlite3* db,
     const std::string& playerName,
     const std::ostringstream& scopePairs,
-    double minuteScore
+    double minuteScore,
+    double percentageCorrect
 ) {
     // do stuff
-    const char* sql = "INSERT INTO scores (player_name, scopePairs, score) VALUES (?, ?, ?);";
+    const char* sql = "INSERT INTO scores (playerName, scopePairs, minuteScore, percentageCorrect) VALUES (?, ?, ?);";
     sqlite3_stmt* stmt;
 
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -105,6 +107,11 @@ bool dbAddResults(
     if (sqlite3_bind_double(stmt, 3, minuteScore) != SQLITE_OK) {
         std::cerr << "Binding score failed: " << sqlite3_errmsg(db) << std::endl;
         sqlite3_finalize(stmt);
+        return false;
+    }
+
+    if (sqlite3_bind_double(stmt, 4, percentageCorrect) != SQLITE_OK) {
+        std::cerr << "Binding Percentage correct failed: " << sqlite3_errmsg(db) << std::endl;
         return false;
     }
 
@@ -183,8 +190,9 @@ int main() {
     int min2 = *std::min_element(digits2.begin(), digits2.end());
     int max2 = *std::max_element(digits2.begin(), digits2.end());
 
-    int seconds = 120;
+    int seconds = 12;
     int corrects = 0;
+    int wrongs = 0;
 
     auto start = std::chrono::steady_clock::now();
     auto end_time = start + std::chrono::seconds(seconds);
@@ -213,10 +221,15 @@ int main() {
             std::cout << "Correct!\n";
         } else {
             std::cout << "Wrong, correct answer is " << n1*n2 << "\n";
+            wrongs += 1;
         }
         std::this_thread::sleep_for(std::chrono::seconds(1));  // Wait 1 sec between iterations
     }
-    std::cout << "\nYou answered " << corrects << " questions correctly in " << seconds << " seconds!\n";
+
+    int totalAnswers = corrects + wrongs;
+    double percentageCorrect = (corrects / totalAnswers) * 100;
+    std::cout << "\nYou answered " << corrects << " / " << totalAnswers << " questions correctly in " << seconds << " seconds!\n";
+    std::cout << "Your accurracy was: " << percentageCorrect << "% !\n\n";
 
     
     // Prepare and add to db.
@@ -238,7 +251,7 @@ int main() {
         std::cerr << "Error opening database: " << sqlite3_errmsg(db) << std::endl;
         return 1;
     }
-    if (dbAddResults(db, playerName, scopePairs, minuteScore)) {
+    if (dbAddResults(db, playerName, scopePairs, minuteScore, percentageCorrect)) {
         std::cout << "New scores successfully saved" << std::endl;
     } else {
         std::cerr << "Failed to store new scores" << std::endl;
