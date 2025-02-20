@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <chrono>
 #include <thread>
+#include <sqlite3.h>
 
 std::string removeWhitespace(const std::string& input) {
     std::string cleaned;
@@ -39,7 +40,6 @@ bool isNonDecimalDigit(const std::string& input) {
     return false; // If none of the above checks passed, it's invalid
 }
 
-
 int getRandomNumber(int min, int max) {
     std::random_device rd;  // Seed for the random number engine
     std::mt19937 gen(rd()); // Mersenne Twister engine
@@ -54,6 +54,29 @@ bool checkAnswer(int n1, int n2, int answer) {
         return true;
     }
     return false;
+}
+
+bool checkDB(const  std::string& filename) {
+    std::ifstream file(filename);
+    return file.good();
+}
+
+bool ensureTable(sqlite3* db) {
+    const char* sql = "CREATE TABLE IF NOT EXISTS scores ("
+    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+    "player_name TEXT NOT NULL, "
+    "score INTEGER NOT NULL, "
+    "scope_pairs TEXT  NOT NULL "
+    "timestamp DATETIME DEFAULT CURRENT_TIMESTAMP);";
+
+    char* errorMessage = nullptr;
+    int exitCode = sqlite3_exec(db, sql, nullptr, nullptr, &errorMessage);
+    if (exitCode != SQLITE_OK) {
+        std::cerr << "Error creating table: " << errorMessage << std::endl;
+        sqlite3_free(errorMessage);
+        return false;
+    }
+    return true;
 }
 
 int main() {

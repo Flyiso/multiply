@@ -5,3 +5,4 @@ todo:
 gui
 time being able to run out before answer input(?)
 statistics
+store scores
