@@ -257,15 +257,15 @@ int main() {
     double minuteScore = (1.0 * corrects) / ((1.0 * seconds) / 60.0);
     std::ostringstream scopePairs;
     if (min1 > min2) {
-        scopePairs << min1 << "," << max1 << "-" << min2 << ',' << max2;
+        scopePairs << "(" << min1 << "-" << max1 << ")(" << min2 << "-" << max2 << ")";
     } else if (min2 > min1) {
-        scopePairs << min2 << "," << max2 << "-" << min1 << ',' << max1;
+        scopePairs << "(" << min2 << "-" << max2 << ")(" << min1 << "-" << max1 << ")";
     } else if (max1 - min1 < max2 - min2) {
-        scopePairs << min1 << "," << max1 << "-" << min2 << ',' << max2;
+        scopePairs << "(" << min1 << "-" << max1 << ")(" << min2 << "-" << max2 << ")";
     } else if (max2 - min2 < max1 - min1) {
-        scopePairs << min2 << "," << max2 << "-" << min1 << ',' << max1;
+        scopePairs << "(" << min2 << "-" << max2 << ")(" << min1 << "-" << max1 << ")";
     } else {
-        scopePairs << min1 << "," << max1 << "-" << min2 << ',' << max2;
+        scopePairs << "(" << min1 << "-" << max1 << ")(" << min2 << "-" << max2 << ")";
     }
     std::string scopePairsSTR = scopePairs.str();
 
