@@ -199,24 +199,39 @@ int main() {
     auto end_time = start + std::chrono::seconds(seconds);
 
     while (std::chrono::steady_clock::now() < end_time) {
-    
+
         auto now = std::chrono::steady_clock::now();
         int elapsedSeconds = std::chrono::duration_cast<std::chrono::seconds>(now - start).count();
         int timeLeft = seconds - elapsedSeconds;
 
         int n1 = getRandomNumber(min1, max1);
         int n2 = getRandomNumber(min2, max2);
+
+        bool answerApproved = false;
         
-        std::cout << "\nTime left: " << timeLeft << " seconds" << " ------------ ";
-        std::cout << "Current accurracy: "<< percentageCorrect << "%" << std::endl;
-        std::cout << "\n" << n1 << " * " << n2 << " = ";
-        std::getline(std::cin, userInput);
-        
+        while (! answerApproved) {
+            std::cout << "\nTime left: " << timeLeft << " seconds" << " ------------ ";
+            std::cout << "Current accurracy: "<< percentageCorrect << "%" << std::endl;
+            std::cout << "\n" << n1 << " * " << n2 << " = ";
+            std::getline(std::cin, userInput);
+            userInput = removeWhitespace(userInput);
+            if (userInput == "exit" ){
+                answerApproved = true;
+                break;
+            } else if (isNonDecimalDigit(userInput)) {
+                answerApproved = true;
+                break;
+            } else {
+                std::cout << "Guess not in valid format. Enter a non-decimal number to guess or 'exit' to exit" << std::endl;
+            }
+        }
+            
         if (userInput == "exit") {
             std::cout << "Goodbye!\n";
             break;
         }
-        int answer = std::stoi(removeWhitespace(userInput));
+
+        int answer = std::stoi(userInput);
         if (checkAnswer(n1, n2, answer)) {
             corrects += 1;
             totalAnswers += 1;
@@ -229,9 +244,10 @@ int main() {
 
         if (totalAnswers > 0) {
             percentageCorrect = (((1.0 * corrects) / (1.0 * totalAnswers)) * (100.0));
-        } 
+        }
+
         std::this_thread::sleep_for(std::chrono::seconds(1));  // Wait 1 sec between iterations
-    }
+        }
 
     std::cout << "\nYou answered " << corrects << " / " << totalAnswers << " questions correctly in " << seconds << " seconds!\n";
     std::cout << "Your accurracy was: " << percentageCorrect << "% !\n\n";
