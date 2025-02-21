@@ -189,9 +189,11 @@ int main() {
     int min2 = *std::min_element(digits2.begin(), digits2.end());
     int max2 = *std::max_element(digits2.begin(), digits2.end());
 
-    int seconds = 120;
+    int seconds = 120; // 120, but adjustable in future.
     int corrects = 0;
     int wrongs = 0;
+    int totalAnswers = 0;
+    double percentageCorrect = 0.0;
 
     auto start = std::chrono::steady_clock::now();
     auto end_time = start + std::chrono::seconds(seconds);
@@ -205,7 +207,8 @@ int main() {
         int n1 = getRandomNumber(min1, max1);
         int n2 = getRandomNumber(min2, max2);
         
-        std::cout << "\nTime left: " << timeLeft << " seconds" << std::endl;
+        std::cout << "\nTime left: " << timeLeft << " seconds" << " ------------ ";
+        std::cout << "Current accurracy: "<< percentageCorrect << "%" << std::endl;
         std::cout << "\n" << n1 << " * " << n2 << " = ";
         std::getline(std::cin, userInput);
         
@@ -213,31 +216,29 @@ int main() {
             std::cout << "Goodbye!\n";
             break;
         }
-        
         int answer = std::stoi(removeWhitespace(userInput));
         if (checkAnswer(n1, n2, answer)) {
             corrects += 1;
+            totalAnswers += 1;
             std::cout << "Correct!\n";
         } else {
             std::cout << "Wrong, correct answer is " << n1*n2 << "\n";
             wrongs += 1;
+            totalAnswers += 1;
         }
+
+        if (totalAnswers > 0) {
+            percentageCorrect = (((1.0 * corrects) / (1.0 * totalAnswers)) * (100.0));
+        } 
         std::this_thread::sleep_for(std::chrono::seconds(1));  // Wait 1 sec between iterations
     }
 
-    double percentageCorrect = 0;
-    int totalAnswers = corrects + wrongs;
-    if (totalAnswers == 0) {
-        percentageCorrect += 0.0;
-    } else {
-        percentageCorrect += ((corrects / totalAnswers) * (100.0));
-    }
     std::cout << "\nYou answered " << corrects << " / " << totalAnswers << " questions correctly in " << seconds << " seconds!\n";
     std::cout << "Your accurracy was: " << percentageCorrect << "% !\n\n";
 
     
     // Prepare and add to db.
-    double minuteScore = corrects / (seconds / 60.0);
+    double minuteScore = (1.0 * corrects) / ((1.0 * seconds) / 60.0);
     std::ostringstream scopePairs;
     if (min1 > min2) {
         scopePairs << min1 << "," << max1 << "-" << min2 << ',' << max2;
